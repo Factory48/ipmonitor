@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=IPMonitor
+Comment=Show country and AS for IP addresses copied to the clipboard
+Comment[zh_CN]=监听剪贴板中的 IP，显示国家 / 地区与 AS 名称
+Exec=ipmonitor
+Icon=com.f48labs.ipmonitor
+Terminal=false
+Categories=Utility;Network;
+Keywords=IP;clipboard;timestamp;ASN;

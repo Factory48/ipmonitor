@@ -1,0 +1,51 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: IPMonitor
+Upstream-Contact: Factory48 Labs <325935121+Factory48@users.noreply.github.com>
+Source: https://github.com/Factory48/ipmonitor
+Comment: /usr/bin/ipmonitor is a Go program built without cgo. It contains the
+ Go standard library, the Go modules it imports, the Go fonts and the offline
+ flag drawings derived from flag-icons. Their license texts are installed in
+ /usr/share/doc/ipmonitor/licenses/ (one file per component).
+
+Files: *
+Copyright: 2026 Factory48 Labs
+License: Expat
+
+Files: usr/bin/ipmonitor
+Copyright: 2026 Factory48 Labs
+ 2009 The Go Authors
+ 2016 Bigelow & Holmes Inc.
+ 2013 Panayiotis Lipiridis
+ 2026 MyGo contributors
+ The authors of the other Go modules listed in /usr/share/doc/ipmonitor/licenses/
+License: Expat and BSD-3-clause and Apache-2.0
+ The licenses of the individual components are the files in
+ /usr/share/doc/ipmonitor/licenses/. On Debian systems the full text of the
+ Apache-2.0 license is also in /usr/share/common-licenses/Apache-2.0.
+
+License: Expat
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ IN THE SOFTWARE.
+
+License: BSD-3-clause
+ See the Go, Go fonts, typesetting and x/* files in
+ /usr/share/doc/ipmonitor/licenses/ for the exact conditions and disclaimer.
+
+License: Apache-2.0
+ See /usr/share/common-licenses/Apache-2.0 and the purego file in
+ /usr/share/doc/ipmonitor/licenses/.

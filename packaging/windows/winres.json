@@ -1,0 +1,29 @@
+{
+  "RT_GROUP_ICON": {
+    "#1": {
+      "0000": "../../resources/icon.png"
+    }
+  },
+  "RT_MANIFEST": {
+    "#1": {
+      "0409": "ipmonitor.manifest"
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0409": {
+        "info": {
+          "0409": {
+            "CompanyName": "Factory48 Labs",
+            "FileDescription": "IPMonitor",
+            "InternalName": "ipmonitor",
+            "LegalCopyright": "Copyright (c) 2026 Factory48 Labs",
+            "MyGoIdentifier": "com.f48labs.ipmonitor",
+            "OriginalFilename": "ipmonitor-windows-amd64.exe",
+            "ProductName": "IPMonitor"
+          }
+        }
+      }
+    }
+  }
+}

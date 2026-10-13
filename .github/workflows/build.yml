@@ -1,0 +1,142 @@
+name: Build native apps
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  test:
+    name: native tests (${{ matrix.name }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: 1280x720 scale 1
+            slug: 1280x720-scale1
+            screen: 1280x720x24
+            gdk_scale: "1"
+            gdk_dpi_scale: "1"
+          - name: 3840x2160 scale 2
+            slug: 3840x2160-scale2
+            screen: 3840x2160x24
+            gdk_scale: "2"
+            gdk_dpi_scale: "0.5"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Install native desktop test runtime
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-0t64 xvfb xauth openbox libgl1-mesa-dri
+      - name: Run behavior and native window tests
+        env:
+          SCREEN: ${{ matrix.screen }}
+          GDK_SCALE: ${{ matrix.gdk_scale }}
+          GDK_DPI_SCALE: ${{ matrix.gdk_dpi_scale }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/popup-proof"
+          xvfb-run -a -s "-screen 0 $SCREEN" bash -c '
+            openbox >"$RUNNER_TEMP/ipmonitor-wm.log" 2>&1 &
+            IPMONITOR_NATIVE_TEST=1 GDK_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1 \
+              IPMONITOR_TIMESTAMP_CAPTURE="$RUNNER_TEMP/popup-proof/popup" \
+              go test -count=1 -tags=mygo_noinspector -gcflags=all=-l -v ./...
+          '
+      # CI-only diagnostics; never part of a GitHub Release.
+      - name: Upload popup screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: popup-proof-${{ matrix.slug }}
+          path: ${{ runner.temp }}/popup-proof/*.png
+          if-no-files-found: error
+          retention-days: 14
+
+  build:
+    name: build release files
+    needs: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Build Linux, Windows and Debian files
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # Tags build their own version; other runs build a 0.0.0 snapshot
+          # that is only ever a CI artifact.
+          version=0.0.0
+          if [ "$REF_TYPE" = tag ]; then version=${REF_NAME#v}; fi
+          scripts/build-release.sh "$version" build/release
+          dpkg-deb --info build/release/ipmonitor_*_amd64.deb
+          dpkg-deb --contents build/release/ipmonitor_*_amd64.deb
+      # Internal transport only: the release job publishes the three files
+      # inside this artifact directly, not the artifact archive.
+      - name: Upload build output for the release job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-files
+          path: build/release/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: publish release
+    if: ${{ github.ref_type == 'tag' && startsWith(github.ref_name, 'v') }}
+    needs: [test, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Download build output
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-files
+          path: release
+      - name: Publish GitHub Release with the three direct files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=${TAG#v}
+          cd release
+          expected=$(printf '%s\n' "ipmonitor_${version}_amd64.deb" ipmonitor-linux-amd64 ipmonitor-windows-amd64.exe | LC_ALL=C sort)
+          actual=$(find . -mindepth 1 -printf '%P\n' | LC_ALL=C sort)
+          if [ "$actual" != "$expected" ]; then
+            echo "unexpected release files:" >&2
+            echo "$actual" >&2
+            exit 1
+          fi
+          cat >../notes.md <<EOF
+          IPMonitor ${version}: native clipboard IP and timestamp monitoring for x64 Linux and Windows.
+
+          - \`ipmonitor_${version}_amd64.deb\`: Debian/Ubuntu package (GTK 3; AppIndicator is recommended for the tray icon).
+          - \`ipmonitor-linux-amd64\`: standalone Linux executable (needs GTK 3 at runtime).
+          - \`ipmonitor-windows-amd64.exe\`: standalone Windows 10/11 executable (no WebView2 needed).
+          EOF
+          gh release create "$TAG" \
+            "ipmonitor_${version}_amd64.deb" \
+            ipmonitor-linux-amd64 \
+            ipmonitor-windows-amd64.exe \
+            --repo "$REPO" \
+            --verify-tag \
+            --title "IPMonitor ${version}" \
+            --notes-file ../notes.md \
+            --generate-notes
