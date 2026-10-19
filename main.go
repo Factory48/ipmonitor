@@ -533,6 +533,7 @@ func (a *application) presentPopup() {
 
 func (a *application) ready() {
 	a.loadConfig()
+	ensureAutostart()
 	a.worker = core.NewClient()
 	a.results = make(chan lookupDone, 8)
 	a.wake = sync.NewCond(&a.mu)
