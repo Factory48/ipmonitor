@@ -26,6 +26,13 @@ import (
 //go:embed resources/tray.png
 var trayPNG []byte
 
+// iconPNG is the application icon installed into the desktop icon theme. GTK
+// needs it as the window icon too: when the shell cannot match a window to a
+// desktop entry it falls back to the window icon instead of the themed one.
+//
+//go:embed resources/icon.png
+var iconPNG []byte
+
 const (
 	appName       = "IPMonitor"
 	popupDuration = 5 * time.Second
@@ -534,6 +541,12 @@ func (a *application) presentPopup() {
 func (a *application) ready() {
 	a.loadConfig()
 	ensureAutostart()
+	if runtime.GOOS == "linux" {
+		// gtk_window_set_default_icon, applied to the windows created below.
+		if err := mygo.App.Dock.SetIcon(iconPNG); err != nil {
+			log.Printf("window icon: %v", err)
+		}
+	}
 	a.worker = core.NewClient()
 	a.results = make(chan lookupDone, 8)
 	a.wake = sync.NewCond(&a.mu)
